@@ -12,7 +12,7 @@ name: Terragrunt CI/CD Pipeline
       - dev/**
 
 permissions:
-  contents: write
+  contents: read
   issues: write
   pull-requests: write
   
@@ -87,24 +87,26 @@ jobs:
         if: github.event_name == 'pull_request'
         with:
           script: |
-            const output = `#### Terragrunt Format and Style 🖌 \`${{ steps.fmt.outcome }}\`
-            #### Terragrunt Initialization ⚙️ \`${{ steps.init.outcome }}\`
-            #### Terragrunt Validation 🤖 \`${{ steps.validate.outcome }}\`
-            #### Terragrunt Plan 📖 \`${{ steps.plan.outcome }}\`
-            <details><summary>Show Plan</summary>
-            \`\`\`\n
-            ${{ env.PLAN_OUTPUT }}
-            \`\`\`
-            </details>
-            Results for commit: ${{ github.event.pull_request.head.sha }}
-            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ env.WORKING_DIRECTORY }}\`, Workflow: \`${{ github.workflow }}\`*`;
+            if (github.context.eventName === 'pull_request') {
+              const output = `#### Terragrunt Format and Style 🖌 \`${{ steps.fmt.outcome }}\`
+              #### Terragrunt Initialization ⚙️ \`${{ steps.init.outcome }}\`
+              #### Terragrunt Validation 🤖 \`${{ steps.validate.outcome }}\`
+              #### Terragrunt Plan 📖 \`${{ steps.plan.outcome }}\`
+              <details><summary>Show Plan</summary>
+              \`\`\`\n
+              ${{ env.PLAN_OUTPUT }}
+              \`\`\`
+              </details>
+              Results for commit: ${{ github.event.pull_request.head.sha }}
+              *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ env.WORKING_DIRECTORY }}\`, Workflow: \`${{ github.workflow }}\`*`;
 
-            await github.rest.issues.createComment({
-              issue_number: github.event.pull_request.number,
-              owner: github.context.repo.owner,
-              repo: github.context.repo.repo,
-              body: output
-            });
+              await github.rest.issues.createComment({
+                issue_number: github.context.payload.pull_request.number,
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                body: output
+              });
+            }
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Terragrunt Plan Status
         if: steps.plan.outcome == 'failure'
