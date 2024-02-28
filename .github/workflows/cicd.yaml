@@ -12,6 +12,7 @@ name: Terragrunt CI/CD Pipeline
       - dev/**
 
 permissions:
+  contents: write
   issues: write
   pull-requests: write
   
@@ -85,7 +86,6 @@ jobs:
       - uses: actions/github-script@v5
         if: github.event_name == 'pull_request'
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const output = `#### Terragrunt Format and Style 🖌 \`${{ steps.fmt.outcome }}\`
             #### Terragrunt Initialization ⚙️ \`${{ steps.init.outcome }}\`
@@ -98,12 +98,14 @@ jobs:
             </details>
             Results for commit: ${{ github.event.pull_request.head.sha }}
             *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ env.WORKING_DIRECTORY }}\`, Workflow: \`${{ github.workflow }}\`*`;
-            github.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+
+            await github.rest.issues.createComment({
+              issue_number: github.event.pull_request.number,
+              owner: github.context.repo.owner,
+              repo: github.context.repo.repo,
               body: output
-            })
+            });
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Terragrunt Plan Status
         if: steps.plan.outcome == 'failure'
         run: exit 1
