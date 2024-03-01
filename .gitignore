@@ -39,3 +39,5 @@ terraform.rc
 
 #ignore infracost directories
 .infracost
+
+.DS_Store
